@@ -1,4 +1,4 @@
-import type { Metadata } from "next";
+import type { Metadata, Viewport } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
 import "./globals.css";
 import { NavigationProgress } from "@/components/navigation-progress";
@@ -16,6 +16,14 @@ const geistMono = Geist_Mono({
 
 const siteUrl =
   process.env.NEXT_PUBLIC_SITE_URL ?? "http://localhost:3000";
+
+export const viewport: Viewport = {
+  width: "device-width",
+  initialScale: 1,
+  maximumScale: 1,
+  minimumScale: 1,
+  userScalable: false,
+};
 
 export const metadata: Metadata = {
   metadataBase: new URL(siteUrl),

@@ -61,7 +61,7 @@ export default async function AdminEditProductPage({ params }: Props) {
           id: category.id,
           name: category.name,
         }))}
-        action={(input) => updateProductAction(id, input)}
+        action={updateProductAction.bind(null, id)}
         submitLabel="Хадгалах"
         cancelHref="/admin/products"
         siteContact={{
