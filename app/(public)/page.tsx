@@ -11,7 +11,7 @@ import { getSettings } from "@/lib/site";
 import { getCategories, getHomeProducts } from "@/lib/data";
 
 export const metadata = {
-  description: "Хувь хүний онлайн каталог — бараануудыг үзээд шууд холбогд.",
+  description: "Асуулт тодруулах зүйл байгаа бол шууд холбогдоорой.",
 };
 
 export default async function HomePage() {

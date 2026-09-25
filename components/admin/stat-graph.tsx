@@ -19,21 +19,21 @@ const TONES: Record<
   primary: {
     stroke: "#7c3aed",
     glow: "rgba(124, 58, 237, 0.4)",
-    areaTop: "rgba(124, 58, 237, 0.30)",
+    areaTop: "rgba(124, 58, 237, 0.28)",
     areaBottom: "rgba(124, 58, 237, 0.02)",
     chip: "bg-violet-500/10 text-violet-600 dark:text-violet-300",
   },
   sky: {
     stroke: "#0284c7",
     glow: "rgba(2, 132, 199, 0.4)",
-    areaTop: "rgba(2, 132, 199, 0.30)",
+    areaTop: "rgba(2, 132, 199, 0.28)",
     areaBottom: "rgba(2, 132, 199, 0.02)",
     chip: "bg-sky-500/10 text-sky-600 dark:text-sky-300",
   },
   emerald: {
     stroke: "#059669",
     glow: "rgba(5, 150, 105, 0.4)",
-    areaTop: "rgba(5, 150, 105, 0.30)",
+    areaTop: "rgba(5, 150, 105, 0.28)",
     areaBottom: "rgba(5, 150, 105, 0.02)",
     chip: "bg-emerald-500/10 text-emerald-600 dark:text-emerald-300",
   },
@@ -87,7 +87,7 @@ export function StatGraph({
   title,
   subtitle = "Сүүлийн 30 хоног",
   tone = "primary",
-  height = 210,
+  height = 200,
   className,
 }: StatGraphProps) {
   const gradientId = React.useId().replace(/:/g, "");
@@ -95,33 +95,47 @@ export function StatGraph({
   const lineRef = React.useRef<SVGPathElement>(null);
   const [width, setWidth] = React.useState(0);
   const [pathLen, setPathLen] = React.useState(0);
+  const [hover, setHover] = React.useState<number | null>(null);
+
+  const measure = React.useCallback(() => {
+    const node = containerRef.current;
+    if (!node) return;
+    const next = node.clientWidth;
+    setWidth((prev) => (Math.abs(next - prev) < 2 ? prev : next));
+  }, []);
 
   React.useEffect(() => {
     const node = containerRef.current;
     if (!node) return;
 
-    const update = () => {
-      setWidth(node.clientWidth);
-      if (lineRef.current && lineRef.current.getTotalLength) {
-        setPathLen(lineRef.current.getTotalLength());
-      }
+    let rafId = 0;
+    const onResize = () => {
+      cancelAnimationFrame(rafId);
+      rafId = requestAnimationFrame(measure);
     };
 
-    update();
-    const observer = new ResizeObserver(update);
-    observer.observe(node);
-    return () => observer.disconnect();
-  }, []);
+    measure();
+    window.addEventListener("resize", onResize);
+    return () => {
+      cancelAnimationFrame(rafId);
+      window.removeEventListener("resize", onResize);
+    };
+  }, [measure]);
+
+  React.useEffect(() => {
+    if (width < 2 || !lineRef.current) return;
+    const length = lineRef.current.getTotalLength();
+    if (length > 0) setPathLen(length);
+  }, [width]);
 
   const total = data.reduce((sum, item) => sum + item.count, 0);
   const topValue = Math.max(...data.map((item) => item.count));
   const yMax = niceMax(topValue);
-  const [hover, setHover] = React.useState<number | null>(null);
 
-  const padL = 34;
-  const padR = 10;
-  const padT = 12;
-  const padB = 24;
+  const padL = 30;
+  const padR = 8;
+  const padT = 10;
+  const padB = 22;
   const plotTop = padT;
   const plotBottom = height - padB;
   const plotHeight = plotBottom - plotTop;
@@ -142,43 +156,41 @@ export function StatGraph({
     points.length > 1
       ? `${linePath} L${points[points.length - 1].x},${plotBottom} L${points[0].x},${plotBottom} Z`
       : "";
+  const showChart = linePath.length > 0;
 
   const ticks = [
     { value: 0, label: "0" },
     { value: yMax / 2, label: Math.round(yMax / 2).toLocaleString("en-US") },
     { value: yMax, label: Math.round(yMax).toLocaleString("en-US") },
   ];
-  const labelIndexes = Array.from(new Set([
-    0,
-    Math.round((n - 1) / 3),
-    Math.round((2 * (n - 1)) / 3),
-    n - 1,
-  ]));
+  const labelIndexes = Array.from(
+    new Set([0, Math.round((n - 1) / 3), Math.round((2 * (n - 1)) / 3), n - 1])
+  );
 
-  const hovered =
-    hover !== null && hover >= 0 && hover < n ? data[hover] : null;
+  const hovered = hover !== null && hover >= 0 && hover < n ? data[hover] : null;
   const maxIndex = data.reduce(
     (best, item, i) => (item.count > (data[best]?.count ?? -1) ? i : best),
     0
   );
-
-  const showClock = pathLen > 0;
+  const drawReady = pathLen > 0;
 
   return (
     <div
       className={cn(
-        "rounded-2xl border bg-card shadow-sm",
+        "min-w-0 w-full overflow-hidden rounded-2xl border bg-card shadow-sm",
         className
       )}
     >
-      <div className="flex items-start justify-between gap-3 px-4 pt-4 sm:px-5 sm:pt-5">
-        <div>
-          <h3 className="text-base font-semibold tracking-tight">{title}</h3>
+      <div className="flex flex-wrap items-start justify-between gap-x-3 gap-y-1 px-4 pt-4 sm:px-5 sm:pt-5">
+        <div className="min-w-0">
+          <h3 className="line-clamp-1 text-base font-semibold tracking-tight">
+            {title}
+          </h3>
           <p className="mt-0.5 text-xs text-muted-foreground">{subtitle}</p>
         </div>
         <div className="text-right">
           <p
-            className="text-2xl font-bold tabular-nums leading-none tracking-tight"
+            className="text-2xl font-bold leading-none tabular-nums tracking-tight"
             style={{ color: TONES[tone].stroke }}
           >
             {total.toLocaleString("en-US")}
@@ -189,29 +201,21 @@ export function StatGraph({
         </div>
       </div>
 
-      <div ref={containerRef} className="relative mt-2 px-2 pb-3">
-        {width > 0 ? (
+      <div ref={containerRef} className="relative px-2 pb-2" style={{ height }}>
+        {width < 2 ? (
+          <div className="shimmer rounded-lg bg-muted/50" style={{ height }} aria-hidden="true" />
+        ) : showChart ? (
           <>
             <svg
-              width={width}
-              height={height}
+              viewBox={`0 0 ${width} ${height}`}
+              preserveAspectRatio="none"
+              className="block w-full select-none"
+              style={{ height }}
               role="img"
               aria-label={`${title} график`}
-              className="select-none"
-              style={
-                {
-                  "--chart-dash": pathLen || 2000,
-                } as React.CSSProperties
-              }
             >
               <defs>
-                <linearGradient
-                  id={`area-${gradientId}`}
-                  x1="0"
-                  y1="0"
-                  x2="0"
-                  y2="1"
-                >
+                <linearGradient id={`area-${gradientId}`} x1="0" y1="0" x2="0" y2="1">
                   <stop offset="0%" stopColor={TONES[tone].areaTop} />
                   <stop offset="100%" stopColor={TONES[tone].areaBottom} />
                 </linearGradient>
@@ -230,7 +234,7 @@ export function StatGraph({
                     strokeDasharray="3 4"
                   />
                   <text
-                    x={padL - 8}
+                    x={padL - 7}
                     y={yAt(tick.value) + 3}
                     textAnchor="end"
                     fontSize="10"
@@ -245,7 +249,7 @@ export function StatGraph({
                 <text
                   key={i}
                   x={xAt(i)}
-                  y={height - 8}
+                  y={height - 7}
                   textAnchor="middle"
                   fontSize="10"
                   className="fill-muted-foreground tabular-nums"
@@ -261,17 +265,13 @@ export function StatGraph({
                   y1={plotTop}
                   y2={plotBottom}
                   stroke={TONES[tone].stroke}
-                  strokeOpacity="0.25"
+                  strokeOpacity="0.22"
                   strokeWidth="1"
                 />
               ) : null}
 
               {areaPath ? (
-                <path
-                  d={areaPath}
-                  fill={`url(#area-${gradientId})`}
-                  className="chart-fade-in"
-                />
+                <path d={areaPath} fill={`url(#area-${gradientId})`} className="chart-fade-in" />
               ) : null}
 
               {linePath ? (
@@ -283,7 +283,8 @@ export function StatGraph({
                   strokeWidth="2.5"
                   strokeLinecap="round"
                   strokeLinejoin="round"
-                  className={cn("chart-draw", !showClock && "opacity-0")}
+                  className={cn("chart-draw", !drawReady && "opacity-0")}
+                  style={{ filter: `drop-shadow(0 1px 2px ${TONES[tone].glow})` }}
                 />
               ) : null}
 
@@ -291,9 +292,9 @@ export function StatGraph({
                 <circle
                   cx={xAt(hover!)}
                   cy={yAt(hovered.count)}
-                  r="5"
+                  r="4.5"
                   fill={TONES[tone].stroke}
-                  stroke="white"
+                  stroke="#fff"
                   strokeWidth="2"
                   className="chart-pop"
                   style={{ filter: `drop-shadow(0 0 6px ${TONES[tone].glow})` }}
@@ -305,7 +306,7 @@ export function StatGraph({
                 cy={yAt(data[maxIndex].count)}
                 r="3"
                 fill={TONES[tone].stroke}
-                stroke="white"
+                stroke="#fff"
                 strokeWidth="1.5"
                 className="chart-pop"
                 style={{
@@ -334,34 +335,17 @@ export function StatGraph({
             {hovered && hover !== null ? (
               <div
                 className="pointer-events-none absolute z-10 -translate-x-1/2 -translate-y-full rounded-lg border bg-background/95 px-3 py-2 shadow-lg backdrop-blur"
-                style={{
-                  left: Math.min(
-                    width - 42,
-                    Math.max(42, xAt(hover))
-                  ),
-                  top: Math.max(14, yAt(hovered.count) - 10),
-                }}
+                style={{ left: clamp(xAt(hover), width), top: Math.max(16, yAt(hovered.count) - 10) }}
               >
-                <p className="text-[11px] font-semibold tracking-wide">
-                  {hovered.label}
-                </p>
+                <p className="text-[11px] font-semibold tracking-wide">{hovered.label}</p>
                 <p className="mt-0.5 flex items-center gap-1.5 whitespace-nowrap text-sm font-bold tabular-nums">
-                  <span
-                    className="h-2 w-2 rounded-full"
-                    style={{ background: TONES[tone].stroke }}
-                  />
+                  <span className="h-2 w-2 rounded-full" style={{ background: TONES[tone].stroke }} />
                   {hovered.count.toLocaleString("en-US")} хүн
                 </p>
               </div>
             ) : null}
           </>
-        ) : (
-          <div
-            className="shimmer rounded-lg bg-muted/60"
-            style={{ height }}
-            aria-hidden="true"
-          />
-        )}
+        ) : null}
       </div>
 
       <div className="flex flex-wrap items-center gap-2 border-t px-4 py-3 sm:px-5">
@@ -372,15 +356,19 @@ export function StatGraph({
           )}
         >
           <span className="h-1.5 w-1.5 rounded-full bg-current" />
-          Хамгийн их: {topValue.toLocaleString("en-US")}
+          Дээд: {topValue.toLocaleString("en-US")}
         </span>
-        <span className="inline-flex items-center gap-1.5 text-xs text-muted-foreground tabular-nums">
+        <span className="text-xs text-muted-foreground tabular-nums">
           {data[maxIndex]?.label}
         </span>
         <span className="ml-auto text-xs text-muted-foreground">
-          {n} өдрийн бүртгэл
+          {n} өдөр
         </span>
       </div>
     </div>
   );
+}
+
+function clamp(x: number, width: number) {
+  return Math.min(width - 56, Math.max(56, x));
 }

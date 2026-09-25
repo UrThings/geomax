@@ -79,7 +79,7 @@ export default async function ProductPage({ params }: Props) {
     <>
       <ProductViewTracker productId={product.id} />
       <div className="mx-auto max-w-7xl px-4 py-8 sm:px-6 sm:py-12">
-      <nav aria-label="Холбоос" className="mb-6 text-sm text-muted-foreground">
+      <nav aria-label="Холбоос" className="mb-6 break-words text-sm text-muted-foreground">
         <Link href="/" className="hover:text-foreground">
           Нүүр
         </Link>
@@ -88,7 +88,7 @@ export default async function ProductPage({ params }: Props) {
           {product.category.name}
         </Link>
         {" / "}
-        <span className="text-foreground">{product.name}</span>
+        <span className="break-words font-medium text-foreground">{product.name}</span>
       </nav>
 
       <div className="grid gap-8 lg:grid-cols-2 lg:gap-12">
@@ -114,7 +114,7 @@ export default async function ProductPage({ params }: Props) {
             ) : null}
           </div>
 
-          <h1 className="mt-4 text-2xl font-bold tracking-tight sm:text-3xl">
+          <h1 className="mt-4 break-words text-2xl font-bold tracking-tight sm:text-3xl">
             {product.name}
           </h1>
 
@@ -131,9 +131,9 @@ export default async function ProductPage({ params }: Props) {
           {product.location || product.createdAt ? (
             <div className="mt-4 flex flex-wrap gap-4 text-sm text-muted-foreground">
               {product.location ? (
-                <span className="inline-flex items-center gap-1.5">
-                  <MapPin className="h-4 w-4" />
-                  {product.location}
+                <span className="inline-flex min-w-0 items-center gap-1.5">
+                  <MapPin className="h-4 w-4 shrink-0" />
+                  <span className="break-words">{product.location}</span>
                 </span>
               ) : null}
               <span className="inline-flex items-center gap-1.5">
@@ -166,7 +166,7 @@ export default async function ProductPage({ params }: Props) {
         {product.description ? (
           <section aria-label="Тайлбар">
             <h2 className="text-lg font-semibold">Тайлбар</h2>
-            <div className="mt-3 space-y-3 text-sm leading-relaxed text-muted-foreground sm:text-base">
+            <div className="mt-3 space-y-3 break-words text-sm leading-relaxed text-muted-foreground sm:text-base">
               {product.description.split(/\n{2,}/).map((paragraph, index) => (
                 <p key={index}>{paragraph}</p>
               ))}
@@ -183,12 +183,12 @@ export default async function ProductPage({ params }: Props) {
                   key={key}
                   className={
                     index % 2 === 0
-                      ? "grid grid-cols-2 gap-2 px-4 py-2.5 text-sm"
-                      : "grid grid-cols-2 gap-2 bg-muted/40 px-4 py-2.5 text-sm"
+                      ? "grid min-w-0 grid-cols-2 gap-2 px-4 py-2.5 text-sm"
+                      : "grid min-w-0 grid-cols-2 gap-2 bg-muted/40 px-4 py-2.5 text-sm"
                   }
                 >
-                  <dt className="text-muted-foreground">{key}</dt>
-                  <dd className="font-medium">{String(value)}</dd>
+                  <dt className="min-w-0 pr-1 break-words text-muted-foreground">{key}</dt>
+                  <dd className="min-w-0 break-words font-medium">{String(value)}</dd>
                 </div>
               ))}
             </dl>

@@ -32,8 +32,7 @@ export default function Footer({
           <div>
             <p className="text-sm font-semibold">{settings.ownerName}</p>
             <p className="mt-2 max-w-xs text-sm text-muted-foreground">
-              Хувь хүний онлайн каталог. Барааны талаар асуулт байвал шууд
-              холбогдоорой.
+              Асуулт тодруулах зүйл байгаа бол шууд холбогдоорой.
             </p>
             {settings.location ? (
               <p className="mt-3 flex items-center gap-2 text-sm text-muted-foreground">
