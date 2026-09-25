@@ -21,7 +21,7 @@ import {
 const CONDITION_LABELS: Record<string, string> = {
   NEW: "Шинэ",
   LIKE_NEW: "Бараг шинэ",
-  USED: "Хэрэглэж байсан",
+  USED: "Хуучин",
 };
 
 type Params = Record<string, string | undefined>;

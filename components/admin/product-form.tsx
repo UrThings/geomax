@@ -32,7 +32,7 @@ import { ImageUploader, type UploadImage } from "@/components/admin/image-upload
 const CONDITION_LABELS: Record<ProductCondition, string> = {
   NEW: "Шинэ",
   LIKE_NEW: "Бараг шинэ",
-  USED: "Хэрэглэж байсан",
+  USED: "Хуучин",
 };
 
 type ProductFormProps = {
