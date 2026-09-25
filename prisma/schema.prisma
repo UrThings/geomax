@@ -1,0 +1,124 @@
+generator client {
+  provider = "prisma-client"
+  output   = "../lib/generated/prisma"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+enum Role {
+  ADMIN
+}
+
+enum ProductStatus {
+  AVAILABLE
+  SOLD
+}
+
+enum ProductCondition {
+  NEW
+  USED
+  LIKE_NEW
+}
+
+model User {
+  id           String   @id @default(cuid())
+  name         String?
+  email        String   @unique
+  passwordHash String
+  role         Role     @default(ADMIN)
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+}
+
+model Product {
+  id           String          @id @default(cuid())
+  name         String
+  slug         String          @unique
+  description  String
+  price        Int
+  condition    ProductCondition @default(NEW)
+  status       ProductStatus   @default(AVAILABLE)
+  location     String?
+  featured     Boolean         @default(false)
+  specs        Json?
+  phone        String?
+  facebookUrl  String?
+  messengerUrl String?
+  categoryId   String
+  category     Category        @relation(fields: [categoryId], references: [id], onDelete: Restrict)
+  images       ProductImage[]
+  views        ProductView?
+  createdAt    DateTime        @default(now())
+  updatedAt    DateTime        @updatedAt
+
+  @@index([name])
+  @@index([categoryId])
+  @@index([status])
+  @@index([featured])
+  @@index([createdAt])
+}
+
+model ProductView {
+  productId String   @id
+  count     Int      @default(0)
+  product   Product  @relation(fields: [productId], references: [id], onDelete: Cascade)
+  updatedAt DateTime @updatedAt
+}
+
+model ProductImage {
+  id        String   @id @default(cuid())
+  url       String
+  alt       String?
+  sortOrder Int      @default(0)
+  productId String
+  product   Product  @relation(fields: [productId], references: [id], onDelete: Cascade)
+  createdAt DateTime @default(now())
+
+  @@index([productId])
+}
+
+model Category {
+  id          String    @id @default(cuid())
+  name        String
+  slug        String    @unique
+  description String?
+  imageUrl    String?
+  sortOrder   Int       @default(0)
+  products    Product[]
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+
+  @@index([sortOrder])
+}
+
+model SiteSettings {
+  id           Int      @id @default(1)
+  ownerName    String   @default("Geomax")
+  siteTitle    String?
+  siteTagline  String?
+  phone        String?
+  facebookUrl  String?
+  messengerUrl String?
+  instagramUrl String?
+  email        String?
+  location     String?
+  bio          String?
+  updatedAt    DateTime @updatedAt
+}
+
+model SiteStat {
+  id        Int      @id @default(1)
+  siteViews Int      @default(0)
+  updatedAt DateTime @updatedAt
+}
+
+model StatEvent {
+  id        String   @id @default(cuid())
+  kind      String
+  productId String?
+  createdAt DateTime @default(now())
+
+  @@index([kind, createdAt])
+}
