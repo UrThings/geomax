@@ -8,6 +8,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
+import { CategoryImageInput } from "@/components/admin/category-image-input";
 import { categorySchema, type CategoryInput } from "@/lib/validations";
 import { slugify } from "@/lib/utils";
 
@@ -48,6 +49,7 @@ export function CategoryForm({
   });
 
   const name = watch("name");
+  const imageUrl = watch("imageUrl") ?? "";
   const [error, setError] = React.useState<string | null>(null);
 
   function autofillSlug() {
@@ -117,17 +119,12 @@ export function CategoryForm({
         <FieldError message={errors.description?.message} />
       </div>
 
-      <div>
-        <Label htmlFor="category-image">Зургийн URL</Label>
-        <Input
-          id="category-image"
-          type="url"
-          {...register("imageUrl")}
-          placeholder="https://..."
-          className="mt-2"
-        />
-        <FieldError message={errors.imageUrl?.message} />
-      </div>
+      <CategoryImageInput
+        value={imageUrl}
+        onChange={(url) => setValue("imageUrl", url, { shouldValidate: true })}
+        error={errors.imageUrl?.message}
+        disabled={isSubmitting}
+      />
 
       <div className="grid gap-4 sm:grid-cols-2">
         <div>

@@ -1,6 +1,7 @@
 "use client";
 
 import * as React from "react";
+import { BarChart3 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import type { DailyStat } from "@/lib/data";
 
@@ -79,6 +80,7 @@ type StatGraphProps = {
   subtitle?: string;
   tone?: Tone;
   height?: number;
+  unit?: string;
   className?: string;
 };
 
@@ -88,6 +90,7 @@ export function StatGraph({
   subtitle = "Сүүлийн 30 хоног",
   tone = "primary",
   height = 200,
+  unit = "хүн",
   className,
 }: StatGraphProps) {
   const gradientId = React.useId().replace(/:/g, "");
@@ -205,8 +208,9 @@ export function StatGraph({
         {width < 2 ? (
           <div className="shimmer rounded-lg bg-muted/50" style={{ height }} aria-hidden="true" />
         ) : showChart ? (
-          <>
-            <svg
+          total > 0 ? (
+            <>
+              <svg
               viewBox={`0 0 ${width} ${height}`}
               preserveAspectRatio="none"
               className="block w-full select-none"
@@ -340,11 +344,30 @@ export function StatGraph({
                 <p className="text-[11px] font-semibold tracking-wide">{hovered.label}</p>
                 <p className="mt-0.5 flex items-center gap-1.5 whitespace-nowrap text-sm font-bold tabular-nums">
                   <span className="h-2 w-2 rounded-full" style={{ background: TONES[tone].stroke }} />
-                  {hovered.count.toLocaleString("en-US")} хүн
+                  {hovered.count.toLocaleString("en-US")} {unit}
                 </p>
               </div>
             ) : null}
-          </>
+            </>
+          ) : (
+            <div
+              className="flex flex-col items-center justify-center gap-2 text-center"
+              style={{ height }}
+            >
+              <span
+                className="flex h-10 w-10 items-center justify-center rounded-full"
+                style={{ background: `${TONES[tone].stroke}1a`, color: TONES[tone].stroke }}
+              >
+                <BarChart3 className="h-5 w-5" />
+              </span>
+              <p className="text-sm font-medium text-muted-foreground">
+                Энэ хугацаанд бүртгэл байхгүй байна
+              </p>
+              <p className="text-xs text-muted-foreground/70">
+                Зочид барааг үзэхэд графикаар автоматаар бүртгэнэ
+              </p>
+            </div>
+          )
         ) : null}
       </div>
 

@@ -67,14 +67,19 @@ export default async function AdminDashboardPage() {
           label="Сайтад зочилсон"
           value={stats.siteViews}
           icon={Eye}
-          hint="Сүүлийн 30 хоногийн хандлага"
+          hint={`Сүүлийн 30 хоног: ${dashboardStats.siteViews30d}`}
           spark={dashboardStats.siteDaily.map((item) => item.count)}
+        />
+        <StatsCard
+          label="Бараа үзсэн"
+          value={dashboardStats.productViewsTotal}
+          icon={Eye}
+          hint={`Сүүлийн 30 хоног: ${dashboardStats.productViews30d}`}
         />
         <StatsCard label="Нийт бараа" value={stats.total} icon={Package} />
         <StatsCard label="Зарагдаагүй" value={stats.available} icon={Tag} />
         <StatsCard label="Зарагдсан" value={stats.sold} icon={CheckCircle2} />
         <StatsCard label="Онцлох" value={stats.featured} icon={Star} />
-        <StatsCard label="Категори" value={stats.categoryCount} icon={Folder} />
       </div>
 
       <div className="grid gap-4 lg:grid-cols-2">
@@ -86,10 +91,18 @@ export default async function AdminDashboardPage() {
         <StatGraph
           data={dashboardStats.productDaily}
           title="Барааг үзсэн тоо"
-          subtitle="Бүх барааны хуудсуудын нийт үзэлт — сүүлийн 30 хоног"
+          subtitle={`Бүх барааны хуудсуудын нийт үзэлт — сүүлийн 30 хоног (нийт ${dashboardStats.productViews30d})`}
           tone="sky"
         />
       </div>
+
+      <StatGraph
+        data={dashboardStats.productCreatedDaily}
+        title="Нэмэгдсэн бараа"
+        subtitle="Каталогт бүртгэгдсэн барааны тоо — сүүлийн 30 хоног"
+        tone="emerald"
+        unit="бараа"
+      />
 
       <div>
         <h2 className="mb-4 text-lg font-semibold">Түргэн үйлдэл</h2>

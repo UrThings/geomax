@@ -3,10 +3,28 @@
 import * as React from "react";
 import Link from "next/link";
 import { Menu, X } from "lucide-react";
-import { AdminNavLinks } from "@/components/admin/admin-sidebar";
+import {
+  AdminNavLinks,
+  AdminSidebarBrand,
+  AdminSidebarFooter,
+} from "@/components/admin/admin-sidebar";
 
 export function AdminHeader({ title }: { title: string }) {
   const [open, setOpen] = React.useState(false);
+
+  React.useEffect(() => {
+    if (!open) return;
+    const previous = document.body.style.overflow;
+    document.body.style.overflow = "hidden";
+    const onKeyDown = (event: KeyboardEvent) => {
+      if (event.key === "Escape") setOpen(false);
+    };
+    window.addEventListener("keydown", onKeyDown);
+    return () => {
+      document.body.style.overflow = previous;
+      window.removeEventListener("keydown", onKeyDown);
+    };
+  }, [open]);
 
   return (
     <>
@@ -40,19 +58,12 @@ export function AdminHeader({ title }: { title: string }) {
             className="absolute inset-0 bg-black/40"
             onClick={() => setOpen(false)}
           />
-          <div className="absolute inset-y-0 left-0 w-72 bg-background shadow-lg">
-            <div className="flex h-14 items-center border-b px-4">
-              <Link
-                href="/admin"
-                onClick={() => setOpen(false)}
-                className="text-base font-bold"
-              >
-                Админ панел
-              </Link>
-            </div>
-            <div className="p-3">
+          <div className="fixed inset-y-0 left-0 flex h-dvh max-w-[85vw] w-72 flex-col bg-background shadow-lg">
+            <AdminSidebarBrand onNavigate={() => setOpen(false)} />
+            <div className="min-h-0 flex-1 overflow-y-auto overscroll-contain px-3 py-3">
               <AdminNavLinks onNavigate={() => setOpen(false)} />
             </div>
+            <AdminSidebarFooter onNavigate={() => setOpen(false)} />
           </div>
         </div>
       ) : null}

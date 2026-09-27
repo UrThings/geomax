@@ -9,6 +9,7 @@ import { isRateLimited } from "@/lib/rate-limit";
 import { categorySchema, productSchema, settingsSchema, signInSchema, type CategoryInput, type ProductInput, type SettingsInput, type SignInInput } from "@/lib/validations";
 import { ProductStatus } from "@/lib/generated/prisma/enums";
 import { slugify, isBlobUrl } from "@/lib/utils";
+import { deleteLocalUploads } from "@/lib/storage";
 
 async function revalidateCatalog() {
   revalidatePath("/", "layout");
@@ -17,14 +18,16 @@ async function revalidateCatalog() {
   revalidatePath("/contact");
 }
 
-async function deleteImagesFromBlob(urls: string[]) {
+async function deleteStoredImages(urls: string[]) {
   const blobUrls = urls.filter(isBlobUrl);
-  if (blobUrls.length === 0 || !process.env.BLOB_READ_WRITE_TOKEN) return;
-  try {
-    await del(blobUrls);
-  } catch {
-    // Deleting is best-effort; the DB record is already going away.
+  if (blobUrls.length > 0 && process.env.BLOB_READ_WRITE_TOKEN) {
+    try {
+      await del(blobUrls);
+    } catch {
+      // Deleting is best-effort; the DB record is already going away.
+    }
   }
+  await deleteLocalUploads(urls);
 }
 
 export async function loginAction(formData: FormData) {
@@ -136,7 +139,7 @@ export async function updateProductAction(id: string, input: ProductInput) {
     (image) => !incomingKeys.has(image.url)
   );
 
-  await deleteImagesFromBlob(removedImages.map((image) => image.url));
+  await deleteStoredImages(removedImages.map((image) => image.url));
 
   await prisma.$transaction(async (tx) => {
     await tx.productImage.deleteMany({ where: { id: { in: removedImages.map((i) => i.id) } } });
@@ -195,7 +198,7 @@ export async function deleteProductAction(id: string) {
     return { error: "Бараа олдсонгүй." };
   }
 
-  await deleteImagesFromBlob(product.images.map((image) => image.url));
+  await deleteStoredImages(product.images.map((image) => image.url));
   await prisma.product.delete({ where: { id } });
 
   await revalidateCatalog();
@@ -241,7 +244,7 @@ export async function deleteProductImageAction(
     return { error: "Зураг олдсонгүй." };
   }
 
-  await deleteImagesFromBlob([image.url]);
+  await deleteStoredImages([image.url]);
   await prisma.productImage.delete({ where: { id: imageId } });
 
   revalidatePath(`/admin/products/${productId}/edit`);
@@ -292,6 +295,10 @@ export async function updateCategoryAction(id: string, input: CategoryInput) {
     id
   );
 
+  if (existing.imageUrl && existing.imageUrl !== data.imageUrl) {
+    await deleteStoredImages([existing.imageUrl]);
+  }
+
   await prisma.category.update({
     where: { id },
     data: {
@@ -320,6 +327,10 @@ export async function deleteCategoryAction(id: string) {
     return {
       error: `Энэ категорид ${category._count.products} бараа байгаа тул устгах боломжгүй. Эхлээд бараануудыг өөр категорид шилжүүлнэ үү.`,
     };
+  }
+
+  if (category.imageUrl) {
+    await deleteStoredImages([category.imageUrl]);
   }
 
   await prisma.category.delete({ where: { id } });

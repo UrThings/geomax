@@ -11,9 +11,36 @@ export const signInSchema = z.object({
 
 export type SignInInput = z.infer<typeof signInSchema>;
 
+const isHttpUrl = (value: string) => {
+  try {
+    const parsed = new URL(value);
+    return parsed.protocol === "http:" || parsed.protocol === "https:";
+  } catch {
+    return false;
+  }
+};
+
+const isHttpOrLocalUrl = (value: string) =>
+  value.startsWith("/") ? /^\/[^\s]+$/.test(value) : isHttpUrl(value);
+
 const urlOrEmpty = (schemeHint: string) =>
   z
-    .union([z.literal(""), z.string().trim().url(`${schemeHint} хүчинтэй хаяг байх ёстой.`)])
+    .string()
+    .trim()
+    .refine(
+      (value) => value === "" || isHttpUrl(value),
+      `${schemeHint} хүчинтэй хаяг байх ёстой.`
+    )
+    .transform((value) => value || null);
+
+const imageUrlOrEmpty = (schemeHint: string) =>
+  z
+    .string()
+    .trim()
+    .refine(
+      (value) => value === "" || isHttpOrLocalUrl(value),
+      `${schemeHint} хүчинтэй хаяг байх ёстой.`
+    )
     .transform((value) => value || null);
 
 const phoneOrEmpty = z
@@ -41,18 +68,7 @@ const specValue = z.union([z.string(), z.number(), z.boolean()]);
 const productImageUrl = z
   .string()
   .trim()
-  .refine(
-    (value) => {
-      if (value.startsWith("/")) return /^\/[^\s]+$/.test(value);
-      try {
-        const parsed = new URL(value);
-        return parsed.protocol === "http:" || parsed.protocol === "https:";
-      } catch {
-        return false;
-      }
-    },
-    "Зургийн URL буруу байна."
-  );
+  .refine(isHttpOrLocalUrl, "Зургийн URL буруу байна.");
 
 export const productImageSchema = z.object({
   url: productImageUrl,
@@ -171,7 +187,7 @@ export const categorySchema = z.object({
     z.literal(""),
     z.string().trim().max(500, "Тайлбар хэт урт байна."),
   ]),
-  imageUrl: urlOrEmpty("Зургийн"),
+  imageUrl: imageUrlOrEmpty("Зургийн"),
   sortOrder: z.coerce
     .number("Дараалал буруу.")
     .int()

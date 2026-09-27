@@ -298,10 +298,20 @@ export type DailyStat = {
   count: number;
 };
 
+function dayKey(date: Date) {
+  return `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, "0")}-${String(date.getDate()).padStart(2, "0")}`;
+}
+
+function toDayKey(value: Date | string) {
+  if (value instanceof Date) return dayKey(value);
+  const parsed = new Date(`${value.slice(0, 10)}T00:00:00`);
+  return Number.isNaN(parsed.getTime()) ? value.slice(0, 10) : dayKey(parsed);
+}
+
 export function buildDailySeries(days: number, rows: DailyRow[]): DailyStat[] {
   const map = new Map<string, number>();
   for (const row of rows) {
-    map.set(String(row.day).slice(0, 10), row.count);
+    map.set(toDayKey(row.day), row.count);
   }
 
   const now = new Date();
@@ -309,34 +319,67 @@ export function buildDailySeries(days: number, rows: DailyRow[]): DailyStat[] {
   const series: DailyStat[] = [];
   for (let i = 0; i < days; i += 1) {
     const date = new Date(start.getFullYear(), start.getMonth(), start.getDate() + i);
-    const key = `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, "0")}-${String(date.getDate()).padStart(2, "0")}`;
     series.push({
-      date: key,
+      date: dayKey(date),
       label: `${date.getMonth() + 1}/${date.getDate()}`,
-      count: map.get(key) ?? 0,
+      count: map.get(dayKey(date)) ?? 0,
     });
   }
   return series;
 }
 
-export async function getDashboardStats() {
+export const getDashboardStats = cache(async () => {
   const start = new Date();
   start.setDate(start.getDate() - 29);
   start.setHours(0, 0, 0, 0);
 
-  const [siteRows, productRows, siteStat] = await Promise.all([
-    prisma.$queryRaw<
-      Array<{ day: Date; count: number }>
-    >`SELECT DATE("createdAt") AS day, COUNT(*)::int AS count FROM "StatEvent" WHERE "kind" = 'site' AND "createdAt" >= ${start} GROUP BY DATE("createdAt") ORDER BY day ASC`,
-    prisma.$queryRaw<
-      Array<{ day: Date; count: number }>
-    >`SELECT DATE("createdAt") AS day, COUNT(*)::int AS count FROM "StatEvent" WHERE "kind" = 'product' AND "createdAt" >= ${start} GROUP BY DATE("createdAt") ORDER BY day ASC`,
-    prisma.siteStat.findUnique({ where: { id: 1 } }),
-  ]);
+  const [siteRows, productRows, productCreatedRows, siteStat, productViewSum] =
+    await Promise.all([
+      prisma.$queryRaw<
+        Array<{ day: Date; count: number }>
+      >`SELECT DATE("createdAt") AS day, COUNT(*)::int AS count FROM "StatEvent" WHERE "kind" = 'site' AND "createdAt" >= ${start} GROUP BY DATE("createdAt") ORDER BY day ASC`,
+      prisma.$queryRaw<
+        Array<{ day: Date; count: number }>
+      >`SELECT DATE("createdAt") AS day, COUNT(*)::int AS count FROM "StatEvent" WHERE "kind" = 'product' AND "createdAt" >= ${start} GROUP BY DATE("createdAt") ORDER BY day ASC`,
+      prisma.$queryRaw<
+        Array<{ day: Date; count: number }>
+      >`SELECT DATE("createdAt") AS day, COUNT(*)::int AS count FROM "Product" WHERE "createdAt" >= ${start} GROUP BY DATE("createdAt") ORDER BY day ASC`,
+      prisma.siteStat.findUnique({ where: { id: 1 } }),
+      prisma.productView.aggregate({ _sum: { count: true } }),
+    ]);
+
+  const siteDaily = buildDailySeries(30, siteRows);
+  const productDaily = buildDailySeries(30, productRows);
 
   return {
     siteViews: siteStat?.siteViews ?? 0,
-    siteDaily: buildDailySeries(30, siteRows),
-    productDaily: buildDailySeries(30, productRows),
+    siteDaily,
+    productDaily,
+    productCreatedDaily: buildDailySeries(30, productCreatedRows),
+    siteViews30d: siteDaily.reduce((sum, item) => sum + item.count, 0),
+    productViews30d: productDaily.reduce((sum, item) => sum + item.count, 0),
+    productViewsTotal: productViewSum._sum.count ?? 0,
   };
+});
+
+export const STAT_EVENT_RETENTION_DAYS = 180;
+
+export async function pruneStatEvents() {
+  const cutoff = new Date();
+  cutoff.setDate(cutoff.getDate() - STAT_EVENT_RETENTION_DAYS);
+
+  const { count } = await prisma.statEvent.deleteMany({
+    where: { createdAt: { lt: cutoff } },
+  });
+  return count;
+}
+
+export async function maybePruneStatEvents(probability = 0.02) {
+  if (Math.random() >= probability) return 0;
+  try {
+    return await pruneStatEvents();
+  } catch (error) {
+    console.error("Failed to prune StatEvent:", error);
+    return 0;
+  }
 }

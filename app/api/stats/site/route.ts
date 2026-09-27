@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
+import { maybePruneStatEvents } from "@/lib/data";
 
 export async function POST() {
   try {
@@ -11,6 +12,11 @@ export async function POST() {
       }),
       prisma.statEvent.create({ data: { kind: "site" } }),
     ]);
+
+    // Awaited, not fire-and-forget: serverless may freeze the instance once the
+    // response is sent. It only touches the DB on ~2% of requests.
+    await maybePruneStatEvents();
+
     return NextResponse.json({ count: stat.siteViews });
   } catch (error) {
     console.error("Failed to record site view:", error);

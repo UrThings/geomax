@@ -1,21 +1,13 @@
 import { NextResponse } from "next/server";
-import { mkdir, writeFile } from "node:fs/promises";
-import path from "node:path";
 import { put } from "@vercel/blob";
 import { isAdmin } from "@/lib/auth";
 import { ALLOWED_IMAGE_TYPES, MAX_IMAGE_SIZE, IMAGE_MIME_EXT } from "@/lib/constants";
+import { saveLocalUpload } from "@/lib/storage";
 
 export async function POST(request: Request) {
   const authenticated = await isAdmin();
   if (!authenticated) {
     return NextResponse.json({ error: "Зөвшөөрөлгүй хүсэлт." }, { status: 401 });
-  }
-
-  if (!process.env.BLOB_READ_WRITE_TOKEN && process.env.VERCEL) {
-    return NextResponse.json(
-      { error: "Vercel Blob тохируулаагүй байна. BLOB_READ_WRITE_TOKEN орчуулаг өгнө үү." },
-      { status: 500 }
-    );
   }
 
   const formData = await request.formData();
@@ -38,24 +30,26 @@ export async function POST(request: Request) {
     );
   }
 
-  const extension = IMAGE_MIME_EXT[file.type] ?? "png";
-  const filename = `${crypto.randomUUID()}.${extension}`;
+  // IMAGE_MIME_EXT values already include the leading dot.
+  const extension = IMAGE_MIME_EXT[file.type] ?? ".png";
+  const filename = `${crypto.randomUUID()}${extension}`;
 
-  try {
-    if (process.env.BLOB_READ_WRITE_TOKEN) {
+  if (process.env.BLOB_READ_WRITE_TOKEN) {
+    try {
       const blob = await put(filename, file, {
         access: "public",
         contentType: file.type,
         addRandomSuffix: true,
       });
-      return NextResponse.json({ url: blob.url });
+      return NextResponse.json({ url: blob.url, storage: "blob" });
+    } catch (error) {
+      console.error("Vercel Blob upload failed, falling back to local storage:", error);
     }
+  }
 
-    const uploadsDir = path.join(process.cwd(), "public", "uploads");
-    await mkdir(uploadsDir, { recursive: true });
-    const buffer = Buffer.from(await file.arrayBuffer());
-    await writeFile(path.join(uploadsDir, filename), buffer);
-    return NextResponse.json({ url: `/uploads/${filename}` });
+  try {
+    const url = await saveLocalUpload(filename, Buffer.from(await file.arrayBuffer()));
+    return NextResponse.json({ url, storage: "local" });
   } catch (error) {
     console.error("Image upload failed:", error);
     return NextResponse.json(

@@ -7,7 +7,7 @@ export function AdminShell({ children }: { children: React.ReactNode }) {
   return (
     <div className="flex min-h-screen">
       <aside className="hidden w-64 shrink-0 border-r bg-card lg:block">
-        <div className="sticky top-0 h-screen">
+        <div className="sticky top-0 h-dvh">
           <AdminSidebar />
         </div>
       </aside>

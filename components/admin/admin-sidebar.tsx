@@ -4,6 +4,7 @@ import * as React from "react";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import {
+  ExternalLink,
   Folder,
   LayoutDashboard,
   LogOut,
@@ -55,45 +56,65 @@ export function AdminNavLinks({ onNavigate }: { onNavigate?: () => void }) {
   );
 }
 
-export function AdminSidebar() {
+export function AdminSidebarBrand({ onNavigate }: { onNavigate?: () => void }) {
+  return (
+    <Link
+      href="/admin"
+      onClick={onNavigate}
+      className={cn(
+        "flex h-14 shrink-0 items-center gap-2 border-b px-4 text-base font-bold",
+        "lg:h-auto lg:py-5"
+      )}
+    >
+      <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-primary text-sm font-black text-primary-foreground">
+        А
+      </span>
+      Админ панел
+    </Link>
+  );
+}
+
+export function AdminSidebarFooter({ onNavigate }: { onNavigate?: () => void }) {
   const router = useRouter();
   const [pending, setPending] = React.useState(false);
 
   return (
-    <div className="flex h-full flex-col">
-      <Link href="/admin" className="flex items-center gap-2 px-4 py-5 text-base font-bold">
-        <span className="flex h-8 w-8 items-center justify-center rounded-lg bg-primary text-sm font-black text-primary-foreground">
-          А
-        </span>
-        Админ панел
+    <div className="mt-auto shrink-0 border-t p-3">
+      <button
+        type="button"
+        disabled={pending}
+        onClick={async () => {
+          setPending(true);
+          await logoutAction();
+          router.push("/admin/login");
+        }}
+        className="flex w-full items-center gap-3 rounded-md px-3 py-2 text-sm font-medium text-muted-foreground transition-colors hover:bg-muted hover:text-foreground disabled:opacity-50"
+      >
+        <LogOut className="h-4 w-4 shrink-0" />
+        Гарах
+      </button>
+      <Link
+        href="/"
+        target="_blank"
+        rel="noopener noreferrer"
+        onClick={onNavigate}
+        className="mt-1 flex items-center gap-3 rounded-md px-3 py-2 text-sm font-medium text-muted-foreground transition-colors hover:bg-muted hover:text-foreground"
+      >
+        <ExternalLink className="h-4 w-4 shrink-0" />
+        Сайт руу очих
       </Link>
-      <div className="px-3">
+    </div>
+  );
+}
+
+export function AdminSidebar() {
+  return (
+    <div className="flex h-full min-h-0 flex-col">
+      <AdminSidebarBrand />
+      <div className="min-h-0 flex-1 overflow-y-auto overscroll-contain px-3 py-3">
         <AdminNavLinks />
       </div>
-      <div className="mt-auto p-3 border-t">
-        <button
-          type="button"
-          disabled={pending}
-          onClick={async () => {
-            setPending(true);
-            await logoutAction();
-            router.push("/admin/login");
-          }}
-          className="flex w-full items-center gap-3 rounded-md px-3 py-2 text-sm font-medium text-muted-foreground transition-colors hover:bg-muted hover:text-foreground disabled:opacity-50"
-        >
-          <LogOut className="h-4 w-4 shrink-0" />
-          Гарах
-        </button>
-        <Link
-          href="/"
-          target="_blank"
-          rel="noopener noreferrer"
-          className="mt-1 flex items-center gap-3 rounded-md px-3 py-2 text-sm font-medium text-muted-foreground transition-colors hover:bg-muted hover:text-foreground"
-        >
-          <Package className="h-4 w-4 shrink-0" />
-          Сайт руу очих
-        </Link>
-      </div>
+      <AdminSidebarFooter />
     </div>
   );
 }

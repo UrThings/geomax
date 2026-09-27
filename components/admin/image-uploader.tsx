@@ -15,6 +15,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { cn } from "@/lib/utils";
 import { ALLOWED_IMAGE_TYPES, MAX_IMAGE_SIZE } from "@/lib/constants";
+import { uploadImageFile } from "@/lib/upload-client";
 
 export type UploadImage = { url: string; alt?: string | null };
 
@@ -23,20 +24,6 @@ type ImageUploaderProps = {
   onChange: (next: UploadImage[]) => void;
   disabled?: boolean;
 };
-
-async function uploadFile(file: File): Promise<string> {
-  const formData = new FormData();
-  formData.append("file", file);
-  const response = await fetch("/api/upload", {
-    method: "POST",
-    body: formData,
-  });
-  const data = await response.json().catch(() => null);
-  if (!response.ok) {
-    throw new Error(data?.error ?? "Зураг хадгалахад алдаа гарлаа.");
-  }
-  return data.url as string;
-}
 
 export function ImageUploader({
   value,
@@ -79,8 +66,8 @@ export function ImageUploader({
     try {
       const next = [...valueRef.current];
       for (const file of valid) {
-        const url = await uploadFile(file);
-        next.push({ url });
+        const result = await uploadImageFile(file);
+        next.push({ url: result.url });
         valueRef.current = next;
         onChange(next);
       }

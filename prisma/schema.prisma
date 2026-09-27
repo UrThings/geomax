@@ -121,4 +121,5 @@ model StatEvent {
   createdAt DateTime @default(now())
 
   @@index([kind, createdAt])
+  @@index([createdAt])
 }
