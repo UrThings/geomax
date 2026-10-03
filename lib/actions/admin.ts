@@ -2,13 +2,12 @@
 
 import { redirect } from "next/navigation";
 import { revalidatePath } from "next/cache";
-import { del } from "@vercel/blob";
 import { prisma } from "@/lib/prisma";
 import { assertAdmin, createSessionToken, destroySessionCookie, findUserByEmail, getRequestIp, hashPassword, setSessionCookie, verifyPassword } from "@/lib/auth";
 import { isRateLimited } from "@/lib/rate-limit";
 import { categorySchema, productSchema, settingsSchema, signInSchema, type CategoryInput, type ProductInput, type SettingsInput, type SignInInput } from "@/lib/validations";
 import { ProductStatus } from "@/lib/generated/prisma/enums";
-import { slugify, isBlobUrl } from "@/lib/utils";
+import { slugify } from "@/lib/utils";
 import { deleteLocalUploads } from "@/lib/storage";
 
 async function revalidateCatalog() {
@@ -19,14 +18,6 @@ async function revalidateCatalog() {
 }
 
 async function deleteStoredImages(urls: string[]) {
-  const blobUrls = urls.filter(isBlobUrl);
-  if (blobUrls.length > 0 && process.env.BLOB_READ_WRITE_TOKEN) {
-    try {
-      await del(blobUrls);
-    } catch {
-      // Deleting is best-effort; the DB record is already going away.
-    }
-  }
   await deleteLocalUploads(urls);
 }
 

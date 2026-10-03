@@ -129,7 +129,7 @@ export function getErrorMessage(error: unknown) {
 }
 
 export function isBlobUrl(url: string) {
-  return url.includes(".public.blob.vercel-storage.com");
+  return false;
 }
 
 export function sanitizeHttpUrl(value: string) {
