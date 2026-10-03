@@ -37,7 +37,17 @@ export async function saveLocalUpload(filename: string, data: Buffer) {
   } catch (e) {
     // ignore
   }
-  await writeFile(path.join(uploadsDir, filename), data);
+  const filePath = path.join(uploadsDir, filename);
+  try {
+    await writeFile(filePath, data);
+  } catch (e: any) {
+    if (e?.code === "ENOENT") {
+      await mkdir(uploadsDir, { recursive: true });
+      await writeFile(filePath, data);
+    } else {
+      throw e;
+    }
+  }
   return localUploadUrl(filename);
 }
 
