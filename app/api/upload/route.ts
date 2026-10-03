@@ -5,7 +5,7 @@ import {
   MAX_IMAGE_SIZE,
   IMAGE_MIME_EXT,
 } from "@/lib/constants";
-import { saveLocalUpload } from "@/lib/storage";
+import { uploadImageToCloudinary } from "@/lib/cloudinary";
 
 export async function POST(request: Request) {
   const authenticated = await isAdmin();
@@ -38,8 +38,8 @@ export async function POST(request: Request) {
 
   try {
     const buffer = Buffer.from(await file.arrayBuffer());
-    const url = await saveLocalUpload(filename, buffer);
-    return NextResponse.json({ url, storage: "local" });
+    const url = await uploadImageToCloudinary(buffer, filename);
+    return NextResponse.json({ url, storage: "cloudinary" });
   } catch (error) {
     console.error("Image upload failed:", error);
     return NextResponse.json(
