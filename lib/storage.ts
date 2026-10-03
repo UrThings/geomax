@@ -32,7 +32,11 @@ export function resolveLocalUploadPath(url: string) {
 }
 
 export async function saveLocalUpload(filename: string, data: Buffer) {
-  await mkdir(uploadsDir, { recursive: true });
+  try {
+    await mkdir(uploadsDir, { recursive: true });
+  } catch (e) {
+    // ignore
+  }
   await writeFile(path.join(uploadsDir, filename), data);
   return localUploadUrl(filename);
 }
